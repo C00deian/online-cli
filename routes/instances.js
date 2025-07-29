@@ -3,7 +3,7 @@ const router = express.Router();
 const awsService = require("../services/awsServices");
 
 // POST /instances - Launch VM
-router.post("/", async (req, res) => {
+router.post("/create", async (req, res) => {
   const result = await awsService.createInstance(req.body);
   res.json(result);
 });
@@ -24,7 +24,7 @@ router.post("/:id/pause", async (req, res) => {
 });
 
 
-router.post('/send-command', async (req, res) => {
+router.post('/connect', async (req, res) => {
   const { instanceId, command } = req.body;
 
   try {

@@ -1,27 +1,38 @@
 const AWS = require("aws-sdk");
 AWS.config.update({
-
+// accessKeyId: "AKIAWL5KCHFWJQQMTX4P",
+//   region: "ap-south-1",
+//   secretAccessKey: "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",
 });
 
 const ec2 = new AWS.EC2();
 const ssm = new AWS.SSM();
 
-exports.createInstance = async ({ ami_id, instance_type }) => {
-  const res = await ec2
-    .runInstances({
-      ImageId: ami_id,    // e.g. Ubuntu AMI for ap-south-1
+
+
+exports.createInstance = async ({ ami_id, instance_type, volume_size}) => {
+  try {
+    // 🔍 Step 1: Get AMI root device name
+    const image = await ec2.describeImages({ ImageIds: [ami_id] }).promise();
+    const rootDeviceName = image.Images[0].RootDeviceName;
+
+    // 🚀 Step 2: Launch instance with custom volume size
+    const res = await ec2.runInstances({
+      ImageId: ami_id,
       InstanceType: instance_type,
       MinCount: 1,
       MaxCount: 1,
       IamInstanceProfile: {
-        Name: "EC2SSMInstanceProfile", //✅ Must exist and contain AmazonSSMManagedInstanceCore
+        Name: "EC2SSMProfile",
       },
-      NetworkInterfaces: [
+      BlockDeviceMappings: [
         {
-          DeviceIndex: 0,
-          AssociatePublicIpAddress: true, //✅ PUBLIC IP
-          SubnetId: "subnet-098fd7ca9bb68175c",
-          Groups: ["sg-05ea4a7751771fff7"],
+          DeviceName: rootDeviceName,
+          Ebs: {
+            VolumeSize: volume_size,
+            VolumeType: "gp3",
+            DeleteOnTermination: true,
+          },
         },
       ],
       TagSpecifications: [
@@ -30,14 +41,19 @@ exports.createInstance = async ({ ami_id, instance_type }) => {
           Tags: [{ Key: "Name", Value: `VM-${Date.now()}` }],
         },
       ],
-    })
-    .promise();
+    }).promise();
 
-  return {
-    instanceId: res.Instances[0].InstanceId,
-    publicIp: res.Instances[0].PublicIpAddress ?? "Fetching...",
-  };
+    const instance = res.Instances[0];
+    return {
+      instanceId: instance.InstanceId,
+      volumeSize: volume_size,
+    };
+  } catch (err) {
+    console.error("Failed to create instance:", err);
+    throw err;
+  }
 };
+
 
 exports.startSSMSession = async (instanceId) => {
   const result = await ssm
