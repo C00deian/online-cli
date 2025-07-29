@@ -18,13 +18,17 @@ router.post("/:id/stop", async (req, res) => {
   res.json(output);
 });
 
+router.post("/:id/terminate", async (req, res) => {
+  const output = await awsService.terminateInstance(req.params.id);
+  res.json(output);
+});
+
 router.post("/:id/pause", async (req, res) => {
   const output = await awsService.hibernateInstance(req.params.id);
   res.json(output);
 });
 
-
-router.post('/connect', async (req, res) => {
+router.post("/connect", async (req, res) => {
   const { instanceId, command } = req.body;
 
   try {
