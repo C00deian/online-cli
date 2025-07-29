@@ -1,8 +1,8 @@
 const AWS = require("aws-sdk");
 AWS.config.update({
-// accessKeyId: "AKIAWL5KCHFWJQQMTX4P",
-//   region: "ap-south-1",
-//   secretAccessKey: "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",
+accessKeyId: "AKIAWL5KCHFWJQQMTX4P",
+  region: "ap-south-1",
+  secretAccessKey: "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",
 });
 
 const ec2 = new AWS.EC2();
